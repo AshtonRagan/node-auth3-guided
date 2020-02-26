@@ -1,24 +1,22 @@
-const bcrypt = require('bcryptjs');
+const bcrypt = require("bcryptjs");
+const jsw = require("jsonwebtoken");
 
-const Users = require('../users/users-model.js');
+const Users = require("../users/users-model.js");
 
 module.exports = (req, res, next) => {
-  const { username, password } = req.headers;
+  const { authorization } = req.headers;
+  const secret = process.env.JWT_SECRET || "keep it safe";
 
-  if (username && password) {
-    Users.findBy({ username })
-      .first()
-      .then(user => {
-        if (user && bcrypt.compareSync(password, user.password)) {
-          next();
-        } else {
-          res.status(401).json({ message: 'Invalid Credentials' });
-        }
-      })
-      .catch(error => {
-        res.status(500).json({ message: 'Ran into an unexpected error' });
-      });
+  if (authorization) {
+    jwt.verify(authorization, secret, (err, decode) => {
+      if (err) {
+        res.status(401).json({ message: "Invalid Credentials" });
+      } else {
+        req.decodedToken = decode;
+        next();
+      }
+    });
   } else {
-    res.status(400).json({ message: 'No credentials provided' });
+    res.status(400).json({ message: "No credentials provided" });
   }
 };
